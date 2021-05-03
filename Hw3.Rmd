@@ -12,7 +12,7 @@ library(broom)
 library(infer)
 ```
 
-The comparative primate dataset we have used from Kamilar and Cooper has in it a large number of variables related to life history and body size. For this exercise, the end aim is to fit a simple linear regression model to predict weaning age (WeaningAge_d) measured in days from species’ brain size (Brain_Size_Species_Mean) measured in grams. Do the following for both weaning age ~ brain size and log(weaning age) ~ log(brain size).
+The comparative primate dataset we have used from Kamilar and Cooper has in it a large number of variables related to life history and body size. For this exercise, the end aim is to fit a simple linear regression model to predict weaning age (WeaningAge_d) measured in days from species’ brain size (Brain_Size_Species_Mean) measured in grams. Do the gh following for both weaning age ~ brain size and log(weaning age) ~ log(brain size).
 ```{r}
 
 
