@@ -1,0 +1,113 @@
+---
+title: "HW 3"
+author: "Janna M"
+date: "5/2/2021"
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(cowplot)
+library(broom)
+library(infer)
+```
+
+The comparative primate dataset we have used from Kamilar and Cooper has in it a large number of variables related to life history and body size. For this exercise, the end aim is to fit a simple linear regression model to predict weaning age (WeaningAge_d) measured in days from species’ brain size (Brain_Size_Species_Mean) measured in grams. Do the following for both weaning age ~ brain size and log(weaning age) ~ log(brain size).
+```{r}
+
+
+```
+
+Fit the regression model and, using {ggplot2}, produce a scatterplot with the fitted line superimposed upon the data. Append the the fitted model equation to your plot.
+HINT: See the function geom_text().
+
+Identify and interpret the point estimate of the slope ( 
+β
+1
+ ), as well as the outcome of the test associated with the hypotheses  
+H
+0
+:
+β
+1
+=
+0
+,
+H
+A
+:
+β
+1
+≠
+0
+ . Also, find a 90% CI for the slope ( 
+β
+1
+ ) parameter.
+Using your model, add lines for the 90% confidence and prediction interval bands on the plot, and add a legend to differentiate between the lines.
+Produce a point estimate and associated 90% prediction interval for the weaning age of a species whose brain weight is 750 gm. Do you trust the model to predict observations accurately for this value of the explanatory variable? Why or why not?
+Looking at your two models (i.e., untransformed versus log-log transformed), which do you think is better? Why?
+CHALLENGE 2:
+When we initially discussed the central limit theorem and confidence intervals, we showed how we could use bootstrapping to estimate standard errors and confidence intervals around certain parameter values, like the mean. Using bootstrapping, we can also do the same for estimating standard errors and CIs around regression parameters, such as  
+β
+  coefficients.
+
+Using the “KamilarAndCooperData.csv” dataset, run a linear regression looking at log(MeanGroupSize) in relation to log(Body_mass_female_mean) and report your  
+β
+  coeffiecients (slope and intercept).
+Then, use bootstrapping to sample from the dataset 1000 times with replacement, each time fitting the same model and calculating the appropriate coefficients. [The size of each sample should be equivalent to the total number of observations in the dataset.] This generates a bootstrap sampling distribution for each  
+β
+  coefficient. Plot a histogram of these sampling distributions for  
+β
+0
+  and  
+β
+1
+ .
+Estimate the standard error for each of your  
+β
+  coefficients as the standard deviation of the sampling distribution from your bootstrap.
+Also determine the 95% CI for each of your  
+β
+  coefficients based on the appropriate quantiles from your sampling distribution.
+How do the SEs estimated from the bootstrap sampling distribution compare to those estimated mathematically as part of lm() function?
+How do your bootstrap CIs compare to those estimated mathematically as part of the lm() function?
+CHALLENGE 3:
+Write your own function, called boot_lm(), that takes as its arguments a dataframe (d=), a linear model (model=, written as a character string, e.g., “logGS ~ logBM”), a user-defined confidence interval level (conf.level=, with default “0.95”), and a number of bootstrap replicates (reps=, with default “1000”).
+
+Your function should return a dataframe that includes: the  
+β
+  coefficient names ( 
+β
+0
+ ,  
+β
+1
+ , etc.); the value of the  
+β
+  coefficients, their standard errors, and their upper and lower CI limits for the linear model based on your original dataset; and the mean  
+β
+  coefficient estimates, SEs, and CI limits for those coefficients based on your bootstrap.
+
+Use your function to run the following models on the “KamilarAndCooperData.csv” dataset:
+
+log(MeanGroupSize) ~ log(Body_mass_female_mean)
+log(DayLength_km) ~ log(Body_mass_female_mean)
+log(DayLength_km) ~ log(Body_mass_female_mean) + log(MeanGroupSize)
+EXTRA CREDIT:
+Using a loop, run your function from Challenge 3 to generate mean  
+β
+1
+  coefficents and lower and upper limits for the 95% CI for the log(MeanGroupSize) ~ log(Body_mass_female_mean) model with different numbers of bootstrap replicates from 10 to 200 by 5s and plot these using {ggplot2}. That is, plot these as three LINES, with the number of replicates as the  
+x
+  aesthetic and the mean, lower CI limit, and upper CI limit from each set of replicates as the  
+y
+  aesthetic. Also plot as a horizontal line the  
+β
+1
+  value from the original linear model.
+
+HINT: The mean  
+β
+1
+  value from each set of bootstrap replicates may not differ that much from the original model!
