@@ -10,17 +10,33 @@ library(tidyverse)
 library(cowplot)
 library(broom)
 library(infer)
+library(ggpubr)
+library(ggpmisc)
+library(lmodel2)
+library(manipulate)
+library(patchwork)
+library(boot)
+library(car)
 ```
 
 The comparative primate dataset we have used from Kamilar and Cooper has in it a large number of variables related to life history and body size. For this exercise, the end aim is to fit a simple linear regression model to predict weaning age (WeaningAge_d) measured in days from species’ brain size (Brain_Size_Species_Mean) measured in grams. Do the gh following for both weaning age ~ brain size and log(weaning age) ~ log(brain size).
+
 ```{r}
-
-
+f <- "https://raw.githubusercontent.com/difiore/ada-2021-datasets/main/KamilarAndCooperData.csv"
+d <- read_csv(f, col_names = TRUE) 
+lm_1<-lm(WeaningAge_d ~ Brain_Size_Species_Mean, d)
 ```
+
 
 Fit the regression model and, using {ggplot2}, produce a scatterplot with the fitted line superimposed upon the data. Append the the fitted model equation to your plot.
 HINT: See the function geom_text().
-
+```{r}
+p1 <- ggplot(data = d, aes(x = Brain_Size_Species_Mean, y = WeaningAge_d), na.rm=TRUE) +
+geom_point()
+p1  <- p1 + geom_smooth(method = 'lm', se= FALSE, color="black" )+
+stat_regline_equation(label.y = 1000)
+p1
+```
 Identify and interpret the point estimate of the slope ( 
 β
 1
@@ -45,25 +61,113 @@ A
 1
  ) parameter.
 Using your model, add lines for the 90% confidence and prediction interval bands on the plot, and add a legend to differentiate between the lines.
+
+```{r}
+summary.lm(lm_1)
+upper<-2.6371+1.96*0.1847
+lower<-2.6371-1.96*0.1847
+upper 
+lower
+ci<- predict(lm_1,
+  newdata = data.frame(Brain_Size_Species_Mean=d$Brain_Size_Species_Mean),
+  interval = "confidence", level = 0.9
+)
+ci<-data.frame(ci)
+ci<-cbind(d$Brain_Size_Species_Mean, ci)
+names(ci) <- c("brain", "c.fit", "c.lwr", "c.upr")
+p1 <- ggplot(data = d, aes(x = Brain_Size_Species_Mean, y = WeaningAge_d), na.rm=TRUE)
+p1 <- p1 + geom_point(alpha=0.5)
+p1 <- p1 + geom_line(
+  data = ci, aes(x = brain, y=c.fit,
+  color = "FIT LINE"))
+p1 <- p1 + geom_line(
+  data=ci, aes(x=brain, y=c.lwr,
+  color="CI"))
+p1 <- p1 + geom_line(
+  data=ci, aes(x=brain, y=c.upr, color="CI"))
+p1
+pi<- predict(lm_1,
+  newdata = data.frame(Brain_Size_Species_Mean=d$Brain_Size_Species_Mean),
+  interval = "prediction", level = 0.9
+)
+pi <- data.frame(pi)
+pi <- cbind(d$Brain_Size_Species_Mean, pi)
+names(pi) <-c("brain", "p.fit", "p.lwr", "p.upr")
+p1 <- p1 + geom_line(data = pi, aes(x = brain, y = p.lwr, color = "PI"))
+p1 <- p1 + geom_line(data = pi, aes(x = brain, y = p.upr, color = "PI"))
+p1 <- p1 + scale_color_manual(values=c("blue", "black", "red"))
+p1
+```
 Produce a point estimate and associated 90% prediction interval for the weaning age of a species whose brain weight is 750 gm. Do you trust the model to predict observations accurately for this value of the explanatory variable? Why or why not?
 Looking at your two models (i.e., untransformed versus log-log transformed), which do you think is better? Why?
+```{r}
+point <- predict(lm_1,
+newdata = data.frame(Brain_Size_Species_Mean = 750),
+interval = "confidence", level = 0.9
+) 
+point
+d$Brain_Size_Species_Mean<-(log(d$Brain_Size_Species_Mean))
+d$WeaningAge_d<-(log(d$WeaningAge_d))
+lm_2<-lm(WeaningAge_d ~ Brain_Size_Species_Mean, d)
+summary.lm(lm_2)
+upper<- 0.57116+1.96*0.03061
+lower<- 0.57116-1.96*0.03061
+upper
+lower
+ci<- predict(lm_2,
+newdata = data.frame(Brain_Size_Species_Mean=d$Brain_Size_Species_Mean),
+interval = "confidence", level = 0.9
+)
+ci<-data.frame(ci)
+ci<-cbind(d$Brain_Size_Species_Mean, ci)
+names(ci) <- c("brain", "c.fit", "c.lwr", "c.upr")
+p2 <- ggplot(data = d, aes(x = Brain_Size_Species_Mean, y = WeaningAge_d), na.rm=TRUE)
+p2 <- p2 + geom_point(alpha=0.5)
+p2 <- p2 + geom_line(
+data = ci, aes(x = brain, y=c.fit,
+color = "FIT LINE"))
+p2 <- p2 + geom_line(
+data=ci, aes(x=brain, y=c.lwr,
+color="CI"))
+p2 <- p2 + geom_line(
+data=ci, aes(x=brain, y=c.upr, color="CI"))
+p2 <- p2 + scale_y_continuous(trans='log10')
+p2 <- p2 + scale_x_continuous(trans='log10')
+p2
+pi<- predict(lm_2,
+newdata = data.frame(Brain_Size_Species_Mean=d$Brain_Size_Species_Mean),
+interval = "prediction", level = 0.9
+)
+pi <- data.frame(pi)
+pi <- cbind(d$Brain_Size_Species_Mean, pi)
+names(pi) <-c("brain", "p.fit", "p.lwr", "p.upr")
+p2 <- p2 + geom_line(data = pi, aes(x = brain, y = p.lwr, color = "PI"))
+p2 <- p2 + geom_line(data = pi, aes(x = brain, y = p.upr, color = "PI"))
+p2 <- p2 + scale_color_manual(values=c("blue", "black", "red"))
+p2
+windows()
+p1
+windows()
+p2
+# I don't trust the model observations.The  point estimate and prediction interval are higher than the observed range of mean brain size.
+
+```
+
+
+
+
 CHALLENGE 2:
-When we initially discussed the central limit theorem and confidence intervals, we showed how we could use bootstrapping to estimate standard errors and confidence intervals around certain parameter values, like the mean. Using bootstrapping, we can also do the same for estimating standard errors and CIs around regression parameters, such as  
-β
-  coefficients.
+```{r}
+f <- "https://raw.githubusercontent.com/difiore/ada-2021-datasets/main/KamilarAndCooperData.csv"
+d <- read_csv(f, col_names = TRUE) 
+```
+CHALLNGE 2
 
 Using the “KamilarAndCooperData.csv” dataset, run a linear regression looking at log(MeanGroupSize) in relation to log(Body_mass_female_mean) and report your  
-β
-  coeffiecients (slope and intercept).
+βcoeffiecients (slope and intercept).
 Then, use bootstrapping to sample from the dataset 1000 times with replacement, each time fitting the same model and calculating the appropriate coefficients. [The size of each sample should be equivalent to the total number of observations in the dataset.] This generates a bootstrap sampling distribution for each  
-β
-  coefficient. Plot a histogram of these sampling distributions for  
-β
-0
-  and  
-β
-1
- .
+β coefficient. Plot a histogram of these sampling distributions for  
+β0 and  β1
 Estimate the standard error for each of your  
 β
   coefficients as the standard deviation of the sampling distribution from your bootstrap.
@@ -72,42 +176,54 @@ Also determine the 95% CI for each of your
   coefficients based on the appropriate quantiles from your sampling distribution.
 How do the SEs estimated from the bootstrap sampling distribution compare to those estimated mathematically as part of lm() function?
 How do your bootstrap CIs compare to those estimated mathematically as part of the lm() function?
+```{r}
+d=na.omit(d)
+d$log_gs<-log(d$MeanGroupSize)
+d$log_fbm<-log(d$Body_mass_female_mean)
+lm_1<-lm(log_gs ~ log_fbm, data=d)
+summary(lm_1)
+boot.coefs <- Boot(lm_1, f=coef, R=1000) 
+hist(boot.coefs)
+summary(boot.coefs)
+confint(boot.coefs, level=0.95, type="norm")
+confint(lm_1, level=0.95, type="norm")
+```
+
 CHALLENGE 3:
 Write your own function, called boot_lm(), that takes as its arguments a dataframe (d=), a linear model (model=, written as a character string, e.g., “logGS ~ logBM”), a user-defined confidence interval level (conf.level=, with default “0.95”), and a number of bootstrap replicates (reps=, with default “1000”).
 
 Your function should return a dataframe that includes: the  
-β
-  coefficient names ( 
-β
-0
- ,  
-β
-1
- , etc.); the value of the  
-β
-  coefficients, their standard errors, and their upper and lower CI limits for the linear model based on your original dataset; and the mean  
-β
-  coefficient estimates, SEs, and CI limits for those coefficients based on your bootstrap.
-
+βcoefficient names ( 
+β0,β1, etc.); the value of the  
+β coefficients, their standard errors, and their upper and lower CI limits for the linear model based on your original dataset; and the mean  
+βcoefficient estimates, SEs, and CI limits for those coefficients based on your bootstrap.
 Use your function to run the following models on the “KamilarAndCooperData.csv” dataset:
-
 log(MeanGroupSize) ~ log(Body_mass_female_mean)
 log(DayLength_km) ~ log(Body_mass_female_mean)
 log(DayLength_km) ~ log(Body_mass_female_mean) + log(MeanGroupSize)
-EXTRA CREDIT:
-Using a loop, run your function from Challenge 3 to generate mean  
-β
-1
-  coefficents and lower and upper limits for the 95% CI for the log(MeanGroupSize) ~ log(Body_mass_female_mean) model with different numbers of bootstrap replicates from 10 to 200 by 5s and plot these using {ggplot2}. That is, plot these as three LINES, with the number of replicates as the  
-x
-  aesthetic and the mean, lower CI limit, and upper CI limit from each set of replicates as the  
-y
-  aesthetic. Also plot as a horizontal line the  
-β
-1
-  value from the original linear model.
 
-HINT: The mean  
-β
-1
-  value from each set of bootstrap replicates may not differ that much from the original model!
+```{r}
+  boot_lm <- function(d, model, reps) {
+  original.est <- get(model)(d)
+  
+  n_est <- length(original.est)
+  temp <- matrix(NA, ncol = n_est , nrow = reps)
+  nobs <- nrow(d)
+  for (i in 1:reps) {
+    posdraws <- ceiling(runif(nobs)*nobs)
+    draw <- d[posdraws,]
+    temp[i,] <- get(model)(draw)
+  }
+  sds <- apply(temp,2,sd)
+  CI <- apply(temp, 2, quantile, probs = c(0.025, 0.975))
+  print(rbind(original.est, sds, CI))
+  return(list(estimates=temp, sds=sds))
+  }
+  gs_fbm <- function(d) lm(d$log_gs ~ d$log_fbm)[[1]]
+gs_fbm.res<-boot_lm(d, "gs_fbm", reps=1000)
+d$log_dl<-log(d$DayLength_km)
+dl_fbm <- function(d) lm(d$log_dl ~ d$log_fbm)[[1]]
+dl_fbm.res<-boot_lm(d, "dl_fbm", reps=1000)
+dl_fbm_gs <- function(d) lm((d$log_dl) ~ (d$log_fbm) + (d$log_gs))[[1]]
+dl_fbm_gs.res<-boot_lm(d, "dl_fbm", reps=1000)
+```
