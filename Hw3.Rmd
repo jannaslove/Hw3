@@ -22,8 +22,10 @@ library(car)
 The comparative primate dataset we have used from Kamilar and Cooper has in it a large number of variables related to life history and body size. For this exercise, the end aim is to fit a simple linear regression model to predict weaning age (WeaningAge_d) measured in days from species’ brain size (Brain_Size_Species_Mean) measured in grams. Do the gh following for both weaning age ~ brain size and log(weaning age) ~ log(brain size).
 
 ```{r}
+#data 
 f <- "https://raw.githubusercontent.com/difiore/ada-2021-datasets/main/KamilarAndCooperData.csv"
 d <- read_csv(f, col_names = TRUE) 
+#regession model 
 lm_1<-lm(WeaningAge_d ~ Brain_Size_Species_Mean, d)
 ```
 
@@ -37,29 +39,7 @@ p1  <- p1 + geom_smooth(method = 'lm', se= FALSE, color="black" )+
 stat_regline_equation(label.y = 1000)
 p1
 ```
-Identify and interpret the point estimate of the slope ( 
-β
-1
- ), as well as the outcome of the test associated with the hypotheses  
-H
-0
-:
-β
-1
-=
-0
-,
-H
-A
-:
-β
-1
-≠
-0
- . Also, find a 90% CI for the slope ( 
-β
-1
- ) parameter.
+Identify and interpret the point estimate of the slope (β1), as well as the outcome of the test associated with the hypotheses H0:β1=0,HA:β1≠0. Also, find a 90% CI for the slope ( β1) parameter.
 Using your model, add lines for the 90% confidence and prediction interval bands on the plot, and add a legend to differentiate between the lines.
 
 ```{r}
@@ -69,8 +49,8 @@ lower<-2.6371-1.96*0.1847
 upper 
 lower
 ci<- predict(lm_1,
-  newdata = data.frame(Brain_Size_Species_Mean=d$Brain_Size_Species_Mean),
-  interval = "confidence", level = 0.9
+newdata = data.frame(Brain_Size_Species_Mean=d$Brain_Size_Species_Mean),
+interval = "confidence", level = 0.9
 )
 ci<-data.frame(ci)
 ci<-cbind(d$Brain_Size_Species_Mean, ci)
@@ -78,17 +58,17 @@ names(ci) <- c("brain", "c.fit", "c.lwr", "c.upr")
 p1 <- ggplot(data = d, aes(x = Brain_Size_Species_Mean, y = WeaningAge_d), na.rm=TRUE)
 p1 <- p1 + geom_point(alpha=0.5)
 p1 <- p1 + geom_line(
-  data = ci, aes(x = brain, y=c.fit,
-  color = "FIT LINE"))
+data = ci, aes(x = brain, y=c.fit,
+color = "FIT LINE"))
 p1 <- p1 + geom_line(
-  data=ci, aes(x=brain, y=c.lwr,
-  color="CI"))
+data=ci, aes(x=brain, y=c.lwr,
+color="CI"))
 p1 <- p1 + geom_line(
-  data=ci, aes(x=brain, y=c.upr, color="CI"))
+data=ci, aes(x=brain, y=c.upr, color="CI"))
 p1
 pi<- predict(lm_1,
-  newdata = data.frame(Brain_Size_Species_Mean=d$Brain_Size_Species_Mean),
-  interval = "prediction", level = 0.9
+newdata = data.frame(Brain_Size_Species_Mean=d$Brain_Size_Species_Mean),
+interval = "prediction", level = 0.9
 )
 pi <- data.frame(pi)
 pi <- cbind(d$Brain_Size_Species_Mean, pi)
@@ -101,6 +81,7 @@ p1
 Produce a point estimate and associated 90% prediction interval for the weaning age of a species whose brain weight is 750 gm. Do you trust the model to predict observations accurately for this value of the explanatory variable? Why or why not?
 Looking at your two models (i.e., untransformed versus log-log transformed), which do you think is better? Why?
 ```{r}
+# 90 % for slope 
 point <- predict(lm_1,
 newdata = data.frame(Brain_Size_Species_Mean = 750),
 interval = "confidence", level = 0.9
@@ -110,10 +91,12 @@ d$Brain_Size_Species_Mean<-(log(d$Brain_Size_Species_Mean))
 d$WeaningAge_d<-(log(d$WeaningAge_d))
 lm_2<-lm(WeaningAge_d ~ Brain_Size_Species_Mean, d)
 summary.lm(lm_2)
+# 
 upper<- 0.57116+1.96*0.03061
 lower<- 0.57116-1.96*0.03061
 upper
 lower
+#plot with log transformed data and line best fit 
 ci<- predict(lm_2,
 newdata = data.frame(Brain_Size_Species_Mean=d$Brain_Size_Species_Mean),
 interval = "confidence", level = 0.9
@@ -158,6 +141,7 @@ p2
 
 CHALLENGE 2:
 ```{r}
+#data 
 f <- "https://raw.githubusercontent.com/difiore/ada-2021-datasets/main/KamilarAndCooperData.csv"
 d <- read_csv(f, col_names = TRUE) 
 ```
@@ -177,14 +161,18 @@ Also determine the 95% CI for each of your
 How do the SEs estimated from the bootstrap sampling distribution compare to those estimated mathematically as part of lm() function?
 How do your bootstrap CIs compare to those estimated mathematically as part of the lm() function?
 ```{r}
+#remove missing values 
 d=na.omit(d)
 d$log_gs<-log(d$MeanGroupSize)
 d$log_fbm<-log(d$Body_mass_female_mean)
+#linear model
 lm_1<-lm(log_gs ~ log_fbm, data=d)
 summary(lm_1)
 boot.coefs <- Boot(lm_1, f=coef, R=1000) 
 hist(boot.coefs)
+#standard error 
 summary(boot.coefs)
+# 95 % confidance intervals 
 confint(boot.coefs, level=0.95, type="norm")
 confint(lm_1, level=0.95, type="norm")
 ```
@@ -203,23 +191,24 @@ log(DayLength_km) ~ log(Body_mass_female_mean)
 log(DayLength_km) ~ log(Body_mass_female_mean) + log(MeanGroupSize)
 
 ```{r}
-  boot_lm <- function(d, model, reps) {
-  original.est <- get(model)(d)
-  
-  n_est <- length(original.est)
-  temp <- matrix(NA, ncol = n_est , nrow = reps)
-  nobs <- nrow(d)
-  for (i in 1:reps) {
-    posdraws <- ceiling(runif(nobs)*nobs)
-    draw <- d[posdraws,]
-    temp[i,] <- get(model)(draw)
-  }
-  sds <- apply(temp,2,sd)
-  CI <- apply(temp, 2, quantile, probs = c(0.025, 0.975))
-  print(rbind(original.est, sds, CI))
-  return(list(estimates=temp, sds=sds))
-  }
-  gs_fbm <- function(d) lm(d$log_gs ~ d$log_fbm)[[1]]
+#bootstrapping  function
+boot_lm <- function(d, model, reps) {
+original.est <- get(model)(d)
+n_est <- length(original.est)
+temp <- matrix(NA, ncol = n_est , nrow = reps)
+nobs <- nrow(d)
+for (i in 1:reps) {
+posdraws <- ceiling(runif(nobs)*nobs)
+draw <- d[posdraws,]
+temp[i,] <- get(model)(draw)
+}
+sds <- apply(temp,2,sd)
+CI <- apply(temp, 2, quantile, probs = c(0.025, 0.975))
+print(rbind(original.est, sds, CI))
+return(list(estimates=temp, sds=sds))
+}
+##Female body size predict
+ gs_fbm <- function(d) lm(d$log_gs ~ d$log_fbm)[[1]]
 gs_fbm.res<-boot_lm(d, "gs_fbm", reps=1000)
 d$log_dl<-log(d$DayLength_km)
 dl_fbm <- function(d) lm(d$log_dl ~ d$log_fbm)[[1]]
